@@ -111,10 +111,10 @@ struct fuse_args {
 	int argc;
 
 	/** Argument vector.  NULL terminated */
-	char **argv;
+	char **argv;/*参数列表*/
 
 	/** Is 'argv' allocated? */
-	int allocated;
+	int allocated;/*标明argv是否为申请的内存*/
 };
 
 /**

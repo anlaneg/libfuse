@@ -65,7 +65,7 @@ struct mount_opts {
 	int allow_other;
 	int flags;
 	int auto_unmount;
-	int blkdev;
+	int blkdev;/*是否用block dev*/
 	char *fsname;
 	char *subtype;
 	char *subtype_opt;
@@ -394,25 +394,30 @@ static int fuse_mount_sys(const char *mnt, struct mount_opts *mo,
 	int res;
 
 	if (!mnt) {
+		/*未指定挂载点*/
 		fuse_log(FUSE_LOG_ERR, "fuse: missing mountpoint parameter\n");
 		return -1;
 	}
 
 	res = stat(mnt, &stbuf);
 	if (res == -1) {
+		/*挂载点不可访问*/
 		fuse_log(FUSE_LOG_ERR, "fuse: failed to access mountpoint %s: %s\n",
 			mnt, strerror(errno));
 		return -1;
 	}
 
 	if (mo->auto_unmount) {
+		/*当前不支持自动unmount*/
 		/* Tell the caller to fallback to fusermount3 because
 		   auto-unmount does not work otherwise. */
 		return -2;
 	}
 
+	/*打开fuse设备*/
 	fd = open(devname, O_RDWR | O_CLOEXEC);
 	if (fd == -1) {
+		/*打开/dev/fuse字符设备失败*/
 		if (errno == ENODEV || errno == ENOENT)
 			fuse_log(FUSE_LOG_ERR, "fuse: device not found, try 'modprobe fuse' first\n");
 		else
@@ -421,11 +426,13 @@ static int fuse_mount_sys(const char *mnt, struct mount_opts *mo,
 		return -1;
 	}
 	if (!O_CLOEXEC)
+		/*支持clone exec,设置它*/
 		fcntl(fd, F_SETFD, FD_CLOEXEC);
 
 	snprintf(tmp, sizeof(tmp),  "fd=%i,rootmode=%o,user_id=%u,group_id=%u",
 		 fd, stbuf.st_mode & S_IFMT, getuid(), getgid());
 
+	/*添加新的参数到kernel_opts*/
 	res = fuse_opt_add_opt(&mo->kernel_opts, tmp);
 	if (res == -1)
 		goto out_close;
@@ -440,14 +447,17 @@ static int fuse_mount_sys(const char *mnt, struct mount_opts *mo,
 		goto out_close;
 	}
 
+	/*使用哪类文件系统*/
 	strcpy(type, mo->blkdev ? "fuseblk" : "fuse");
 	if (mo->subtype) {
 		strcat(type, ".");
 		strcat(type, mo->subtype);
 	}
+	/*指明文件系统名称*/
 	strcpy(source,
 	       mo->fsname ? mo->fsname : (mo->subtype ? mo->subtype : devname));
 
+	/*执行mount进行文件系统挂载*/
 	res = mount(source, mnt, type, mo->flags, mo->kernel_opts);
 	if (res == -1 && errno == ENODEV && mo->subtype) {
 		/* Probably missing subtype support */
@@ -529,6 +539,7 @@ struct mount_opts *parse_mount_opts(struct fuse_args *args)
 {
 	struct mount_opts *mo;
 
+	/*申请mount_opts*/
 	mo = (struct mount_opts*) malloc(sizeof(struct mount_opts));
 	if (mo == NULL)
 		return NULL;
@@ -572,6 +583,7 @@ int fuse_kern_mount(const char *mountpoint, struct mount_opts *mo)
 	if (mo->mtab_opts &&  fuse_opt_add_opt(&mnt_opts, mo->mtab_opts) == -1)
 		goto out;
 
+	/*fuse文件系统挂载*/
 	res = fuse_mount_sys(mountpoint, mo, mnt_opts);
 	if (res == -2) {
 		if (mo->fusermount_opts &&

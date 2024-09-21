@@ -520,6 +520,7 @@ static int fuse_send_data_iov_fallback(struct fuse_session *se,
 	iov[iov_count].iov_base = mbuf;
 	iov[iov_count].iov_len = len;
 	iov_count++;
+	/*进行io响应*/
 	res = fuse_send_msg(se, ch, iov, iov_count);
 	free(mbuf);
 
@@ -860,6 +861,7 @@ static int fuse_send_data_iov(struct fuse_session *se, struct fuse_chan *ch,
 	size_t len = fuse_buf_size(buf);
 	(void) flags;
 
+	/*发送数据*/
 	return fuse_send_data_iov_fallback(se, ch, iov, iov_count, buf, len);
 }
 #endif
@@ -1341,6 +1343,7 @@ static void do_open(fuse_req_t req, fuse_ino_t nodeid, const void *inarg)
 	fi.flags = arg->flags;
 
 	if (req->se->op.open)
+		/*调用session的open接口完成*/
 		req->se->op.open(req, nodeid, &fi);
 	else
 		fuse_reply_open(req, &fi);
@@ -2507,7 +2510,9 @@ int fuse_req_interrupted(fuse_req_t req)
 }
 
 static struct {
+	/*处理函数*/
 	void (*func)(fuse_req_t, fuse_ino_t, const void *);
+	/*函数对应的操作名称*/
 	const char *name;
 } fuse_ll_ops[] = {
 	[FUSE_LOOKUP]	   = { do_lookup,      "LOOKUP"	     },
@@ -2560,6 +2565,7 @@ static struct {
 
 #define FUSE_MAXOP (sizeof(fuse_ll_ops) / sizeof(fuse_ll_ops[0]))
 
+/*返回操作对应的名称*/
 static const char *opname(enum fuse_opcode opcode)
 {
 	if (opcode >= FUSE_MAXOP || !fuse_ll_ops[opcode].name)
@@ -2714,6 +2720,7 @@ void fuse_session_process_buf_int(struct fuse_session *se,
 	else if (in->opcode == FUSE_NOTIFY_REPLY)
 		do_notify_reply(req, in->nodeid, inarg, buf);
 	else
+		/*调用此opcode对应的处理函数*/
 		fuse_ll_ops[in->opcode].func(req, in->nodeid, inarg);
 
 out_free:
@@ -2920,7 +2927,7 @@ restart:
 		/* se->io->read is never NULL if se->io is not NULL as
 		specified by fuse_session_custom_io()*/
 		res = se->io->read(ch ? ch->fd : se->fd, buf->mem, se->bufsize,
-					 se->userdata);
+					 se->userdata);/*自fd读取数据*/
 	} else {
 		res = read(ch ? ch->fd : se->fd, buf->mem, se->bufsize);
 	}
@@ -3033,6 +3040,7 @@ struct fuse_session *fuse_session_new(struct fuse_args *args,
 		goto out5;
 	}
 
+	/*设置session对应的ops*/
 	memcpy(&se->op, op, op_size);
 	se->owner = getuid();
 	se->userdata = userdata;
@@ -3099,7 +3107,7 @@ int fuse_session_mount(struct fuse_session *se, const char *mountpoint)
 		fd = open("/dev/null", O_RDWR);
 		if (fd > 2)
 			close(fd);
-	} while (fd >= 0 && fd <= 2);
+	} while (fd >= 0 && fd <= 2);/*保证0，1，2 fd均存在*/
 
 	/*
 	 * To allow FUSE daemons to run without privileges, the caller may open
@@ -3109,13 +3117,14 @@ int fuse_session_mount(struct fuse_session *se, const char *mountpoint)
 	 */
 	fd = fuse_mnt_parse_fuse_fd(mountpoint);
 	if (fd != -1) {
+		/*mountpoint给定的是一个fd，校验fd是否有效*/
 		if (fcntl(fd, F_GETFD) == -1) {
 			fuse_log(FUSE_LOG_ERR,
 				"fuse: Invalid file descriptor /dev/fd/%u\n",
 				fd);
 			return -1;
 		}
-		se->fd = fd;
+		se->fd = fd;/*设置此fd并返回*/
 		return 0;
 	}
 

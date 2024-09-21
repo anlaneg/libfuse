@@ -24,6 +24,7 @@ int fuse_session_loop(struct fuse_session *se)
 	};
 
 	while (!fuse_session_exited(se)) {
+		/*自se->fd中收取fbuf*/
 		res = fuse_session_receive_buf_int(se, &fbuf, NULL);
 
 		if (res == -EINTR)
@@ -31,6 +32,7 @@ int fuse_session_loop(struct fuse_session *se)
 		if (res <= 0)
 			break;
 
+		/*处理收到的buffer,进行io响应*/
 		fuse_session_process_buf_int(se, &fbuf, NULL);
 	}
 

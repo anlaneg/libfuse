@@ -1930,7 +1930,7 @@ struct fuse_cmdline_opts {
 	int debug;
 	int nodefault_subtype;
 	char *mountpoint;
-	int show_version;
+	int show_version;/*是否显示版本*/
 	int show_help;
 	int clone_fd;
 	unsigned int max_idle_threads; /* discouraged, due to thread

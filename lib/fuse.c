@@ -58,7 +58,7 @@
 #define NODE_TABLE_MIN_SIZE 8192
 
 struct fuse_fs {
-	struct fuse_operations op;
+	struct fuse_operations op;/*文件操作函数*/
 	void *user_data;
 	int debug;
 };
@@ -1715,6 +1715,7 @@ int fuse_fs_open(struct fuse_fs *fs, const char *path,
 			fuse_log(FUSE_LOG_DEBUG, "open flags: 0x%x %s\n", fi->flags,
 				path);
 
+		/*调用实际的open函数*/
 		err = fs->op.open(path, fi);
 
 		if (fs->debug && !err)
@@ -3266,6 +3267,7 @@ static void fuse_lib_read(fuse_req_t req, fuse_ino_t ino, size_t size,
 	}
 
 	if (res == 0)
+		/*读操作响应数据*/
 		fuse_reply_data(req, buf, FUSE_BUF_SPLICE_MOVE);
 	else
 		reply_err(req, res);
@@ -4869,7 +4871,7 @@ struct fuse *fuse_new_31(struct fuse_args *args,
 	struct fuse *f;
 	struct node *root;
 	struct fuse_fs *fs;
-	struct fuse_lowlevel_ops llop = fuse_path_ops;
+	struct fuse_lowlevel_ops llop = fuse_path_ops;/*定义低层的ops*/
 
 	f = (struct fuse *) calloc(1, sizeof(struct fuse));
 	if (f == NULL) {

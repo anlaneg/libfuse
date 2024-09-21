@@ -168,6 +168,7 @@ int main(int argc, char *argv[])
 	   without usage: line (by setting argv[0] to the empty
 	   string) */
 	if (options.show_help) {
+		/*显示帮助信息*/
 		show_help(argv[0]);
 		assert(fuse_opt_add_arg(&args, "--help") == 0);
 		args.argv[0][0] = '\0';

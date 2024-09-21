@@ -362,6 +362,7 @@ int fuse_mnt_parse_fuse_fd(const char *mountpoint)
 
 	if (sscanf(mountpoint, "/dev/fd/%u%n", &fd, &len) == 1 &&
 	    len == strlen(mountpoint)) {
+		/*如果传入的mountpoint为/dev/fd/xx格式的，则解析其中的fd并返回*/
 		return fd;
 	}
 

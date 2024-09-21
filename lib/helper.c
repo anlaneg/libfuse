@@ -318,6 +318,7 @@ int fuse_main_real(int argc, char *argv[], const struct fuse_operations *op,
 		return 1;
 
 	if (opts.show_version) {
+		/*显示版本*/
 		printf("FUSE library version %s\n", PACKAGE_VERSION);
 		fuse_lowlevel_version();
 		res = 0;
@@ -325,6 +326,7 @@ int fuse_main_real(int argc, char *argv[], const struct fuse_operations *op,
 	}
 
 	if (opts.show_help) {
+		/*显示用法*/
 		if(args.argv[0][0] != '\0')
 			printf("usage: %s [options] <mountpoint>\n\n",
 			       args.argv[0]);
@@ -337,6 +339,7 @@ int fuse_main_real(int argc, char *argv[], const struct fuse_operations *op,
 
 	if (!opts.show_help &&
 	    !opts.mountpoint) {
+		/*没有指定mountpoint,报错*/
 		fuse_log(FUSE_LOG_ERR, "error: no mountpoint specified\n");
 		res = 2;
 		goto out1;
@@ -349,6 +352,7 @@ int fuse_main_real(int argc, char *argv[], const struct fuse_operations *op,
 		goto out1;
 	}
 
+	/*实现文件系统挂载*/
 	if (fuse_mount(fuse,opts.mountpoint) != 0) {
 		res = 4;
 		goto out2;
@@ -366,6 +370,7 @@ int fuse_main_real(int argc, char *argv[], const struct fuse_operations *op,
 	}
 
 	if (opts.singlethread)
+		/*单线程处理*/
 		res = fuse_loop(fuse);
 	else {
 		loop_config = fuse_loop_cfg_create();
@@ -458,7 +463,7 @@ struct fuse_conn_info_opts* fuse_parse_conn_info_opts(struct fuse_args *args)
 	return opts;
 }
 
-int fuse_open_channel(const char *mountpoint, const char* options)
+int fuse_open_channel(const char *mountpoint/*挂载点*/, const char* options)
 {
 	struct mount_opts *opts = NULL;
 	int fd = -1;
@@ -466,10 +471,12 @@ int fuse_open_channel(const char *mountpoint, const char* options)
 	int argc = sizeof(argv) / sizeof(argv[0]);
 	struct fuse_args args = FUSE_ARGS_INIT(argc, (char**) argv);
 
+	/*解析挂载选项*/
 	opts = parse_mount_opts(&args);
 	if (opts == NULL)
 		return -1;
 
+	/*执行文件系统挂载*/
 	fd = fuse_kern_mount(mountpoint, opts);
 	destroy_mount_opts(opts);
 

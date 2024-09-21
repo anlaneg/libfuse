@@ -52,6 +52,7 @@ static int alloc_failed(void)
 	return -1;
 }
 
+/*在args结尾处增加一个新的参数arg*/
 int fuse_opt_add_arg(struct fuse_args *args, const char *arg)
 {
 	char **newargv;
@@ -59,10 +60,12 @@ int fuse_opt_add_arg(struct fuse_args *args, const char *arg)
 
 	assert(!args->argv || args->allocated);
 
+	/*复制arg*/
 	newarg = strdup(arg);
 	if (!newarg)
 		return alloc_failed();
 
+	/*扩展两个参数指针*/
 	newargv = realloc(args->argv, (args->argc + 2) * sizeof(char *));
 	if (!newargv) {
 		free(newarg);
@@ -71,8 +74,8 @@ int fuse_opt_add_arg(struct fuse_args *args, const char *arg)
 
 	args->argv = newargv;
 	args->allocated = 1;
-	args->argv[args->argc++] = newarg;
-	args->argv[args->argc] = NULL;
+	args->argv[args->argc++] = newarg;/*设置新增的参数*/
+	args->argv[args->argc] = NULL;/*设置参数结尾*/
 	return 0;
 }
 
@@ -114,7 +117,9 @@ static int add_arg(struct fuse_opt_context *ctx, const char *arg)
 
 static int add_opt_common(char **opts, const char *opt, int esc)
 {
+	/*取旧长度*/
 	unsigned oldlen = *opts ? strlen(*opts) : 0;
+	/*扩展内存以容纳本次新增内容（*2防止需要转义）*/
 	char *d = realloc(*opts, oldlen + 1 + strlen(opt) * 2 + 1);
 
 	if (!d)
@@ -123,12 +128,12 @@ static int add_opt_common(char **opts, const char *opt, int esc)
 	*opts = d;
 	if (oldlen) {
 		d += oldlen;
-		*d++ = ',';
+		*d++ = ',';/*之前有内容，用逗号隔开新加入的内容*/
 	}
 
 	for (; *opt; opt++) {
 		if (esc && (*opt == ',' || *opt == '\\'))
-			*d++ = '\\';
+			*d++ = '\\';/*如果指明需转义，则对特别字符进行转义*/
 		*d++ = *opt;
 	}
 	*d = '\0';
@@ -371,6 +376,7 @@ static int process_one(struct fuse_opt_context *ctx, const char *arg)
 static int opt_parse(struct fuse_opt_context *ctx)
 {
 	if (ctx->argc) {
+		/*增加argv[0]参数到ctx->outargs*/
 		if (add_arg(ctx, ctx->argv[0]) == -1)
 			return -1;
 	}
